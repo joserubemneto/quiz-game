@@ -3,10 +3,13 @@ package main
 import (
 	"bufio"
 	"encoding/csv"
+	"errors"
 	"fmt"
 	"os"
 	"strconv"
 )
+
+const YellowANSICode = "\033[33m"
 
 type Question struct {
 	Text    string
@@ -59,10 +62,12 @@ func (g *GameState) ProcessCSV() {
 
 	for index, record := range records {
 		if index > 0 {
+			correctAnswer, _ := toInt(record[5])
+
 			question := Question{
 				Text:    record[0],
 				Options: record[1:5],
-				Answer:  toInt(record[5]),
+				Answer:  correctAnswer,
 			}
 
 			g.Questions = append(g.Questions, question)
@@ -70,18 +75,60 @@ func (g *GameState) ProcessCSV() {
 	}
 }
 
-func toInt(s string) int {
+func toInt(s string) (int, error) {
 	i, err := strconv.Atoi(s)
 
 	if err != nil {
-		panic("Error converting string to int")
+		return 0, errors.New("Invalid input. Your answer must be a number")
 	}
 
-	return i
+	return i, nil
+}
+
+func (g *GameState) Run() {
+	// Display question to the user
+	for i, question := range g.Questions {
+		fmt.Println("--------------------------------------------------")
+		fmt.Printf("%s %d. %s %s\n", YellowANSICode, i+1, question.Text, YellowANSICode)
+
+		for j, option := range question.Options {
+			fmt.Printf("[%d] - %s\n", j+1, option)
+		}
+
+		fmt.Println("Your answer:")
+
+		var answer int
+		var err error
+
+		for {
+			reader := bufio.NewReader(os.Stdin)
+
+			read, _ := reader.ReadString('\n')
+
+			answer, err = toInt(read[:len(read)-1]) // remove \n from read
+
+			if err != nil {
+				fmt.Println(err.Error())
+				continue
+			}
+
+			break
+		}
+
+		if answer == question.Answer {
+			fmt.Println("Congrats, you got it right!")
+			g.Score += 10
+		} else {
+			fmt.Println("Sorry, you got it wrong!")
+		}
+	}
 }
 
 func main() {
 	game := &GameState{Score: 0}
-	go game.ProcessCSV()
+	game.ProcessCSV()
 	game.Init()
+	game.Run()
+
+	fmt.Printf("Game over, Your final score is %d\n", game.Score)
 }
