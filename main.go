@@ -79,14 +79,13 @@ func toInt(s string) (int, error) {
 	i, err := strconv.Atoi(s)
 
 	if err != nil {
-		return 0, errors.New("Invalid input. Your answer must be a number")
+		return 0, errors.New("invalid input. Your answer must be a number")
 	}
 
 	return i, nil
 }
 
 func (g *GameState) Run() {
-	// Display question to the user
 	for i, question := range g.Questions {
 		fmt.Println("--------------------------------------------------")
 		fmt.Printf("%s %d. %s %s\n", YellowANSICode, i+1, question.Text, YellowANSICode)
