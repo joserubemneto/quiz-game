@@ -17,3 +17,4 @@ The game is based on a csv file that contains all the questions and answers of t
 
 1. Do the proper error handling instead of using panic everywhere
 2. Add tests for the system
+3. Split system into multiple modules
