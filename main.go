@@ -43,7 +43,12 @@ func (g *GameState) ProcessCSV() {
 		panic("Error opening file")
 	}
 
-	defer file.Close()
+	defer func(file *os.File) {
+		err := file.Close()
+		if err != nil {
+			panic("Error closing file")
+		}
+	}(file)
 
 	reader := csv.NewReader(file)
 	records, err := reader.ReadAll()
