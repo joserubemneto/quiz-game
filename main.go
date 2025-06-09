@@ -7,9 +7,11 @@ import (
 	"fmt"
 	"os"
 	"strconv"
+	"time"
 )
 
 const YellowANSICode = "\033[33m"
+const TimeToAnswer = time.Second * 3
 
 type Question struct {
 	Text    string
@@ -86,6 +88,8 @@ func toInt(s string) (int, error) {
 }
 
 func (g *GameState) Run() {
+	answerCh := make(chan int)
+
 	for i, question := range g.Questions {
 		fmt.Println("--------------------------------------------------")
 		fmt.Printf("%s %d. %s %s\n", YellowANSICode, i+1, question.Text, YellowANSICode)
@@ -94,31 +98,35 @@ func (g *GameState) Run() {
 			fmt.Printf("[%d] - %s\n", j+1, option)
 		}
 
-		fmt.Println("Your answer:")
+		fmt.Println("Your answer (you have 10 seconds to answer):")
 
-		var answer int
-		var err error
+		go func() {
+			for {
+				reader := bufio.NewReader(os.Stdin)
 
-		for {
-			reader := bufio.NewReader(os.Stdin)
+				input, _ := reader.ReadString('\n')
+				answer, err := toInt(input[:len(input)-1])
 
-			read, _ := reader.ReadString('\n')
+				if err == nil {
+					answerCh <- answer
+				}
+			}
+		}()
 
-			answer, err = toInt(read[:len(read)-1]) // remove \n from read
-
-			if err != nil {
-				fmt.Println(err.Error())
-				continue
+		select {
+		case answer := <-answerCh:
+			if answer == question.Answer {
+				fmt.Println("Congrats, you got it right!")
+				g.Score += 10
+			} else {
+				fmt.Println("Sorry, you got it wrong!")
 			}
 
-			break
-		}
+			continue
 
-		if answer == question.Answer {
-			fmt.Println("Congrats, you got it right!")
-			g.Score += 10
-		} else {
-			fmt.Println("Sorry, you got it wrong!")
+		case <-time.After(5 * time.Second):
+			fmt.Println("\nTime's up! Moving to the next question.")
+			continue
 		}
 	}
 }
