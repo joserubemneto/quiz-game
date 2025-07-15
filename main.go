@@ -41,25 +41,21 @@ func (g *GameState) Init() {
 	fmt.Printf("Let's start the game, %s", g.Name)
 }
 
-func (g *GameState) ProcessCSV() {
-	file, err := os.Open("quiz.csv")
+func (g *GameState) ProcessCSV() error {
+	fileName := "quiz.csv"
+	file, err := os.Open(fileName)
 
 	if err != nil {
-		panic("Error opening file")
+		return fmt.Errorf("error opening file: %s", fileName)
 	}
 
-	defer func(file *os.File) {
-		err := file.Close()
-		if err != nil {
-			panic("Error closing file")
-		}
-	}(file)
+	defer file.Close()
 
 	reader := csv.NewReader(file)
 	records, err := reader.ReadAll()
 
 	if err != nil {
-		panic("Error reading csv file")
+		return fmt.Errorf("error reading csv file: %s", fileName)
 	}
 
 	for index, record := range records {
@@ -75,6 +71,8 @@ func (g *GameState) ProcessCSV() {
 			g.Questions = append(g.Questions, question)
 		}
 	}
+
+	return nil
 }
 
 func toInt(s string) (int, error) {
@@ -133,7 +131,12 @@ func (g *GameState) Run() {
 
 func main() {
 	game := &GameState{Score: 0}
-	game.ProcessCSV()
+
+	if err := game.ProcessCSV(); err != nil {
+		fmt.Println("Failed to load quiz:", err)
+		os.Exit(1)
+	}
+
 	game.Init()
 	game.Run()
 
